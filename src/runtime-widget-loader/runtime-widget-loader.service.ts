@@ -101,9 +101,15 @@ export class RuntimeWidgetLoaderService {
 
         // Find the current app so that we can pull a list of installed widgets from it
         const appList = (await (await this.fetchClient.fetch(`/application/applicationsByUser/${encodeURIComponent(user.userName)}?pageSize=2000`)).json()).applications;
-        const app: IApplication & {widgetContextPaths?: string[]} | undefined = appList.find(app => app.contextPath === contextPathFromURL());
-
-       
+        
+        // Updated to check for own app builder first
+        let app: IApplication & {widgetContextPaths?: string[]} | undefined = appList.find(app => app.contextPath === contextPathFromURL() &&
+        app.availability === 'PRIVATE') ;
+        if (!app) {
+            // Own App builder not found. Looking for subscribed one
+            app = appList.find(app => app.contextPath === contextPathFromURL());
+            if(!app) { throw Error('Could not find current application.');}
+        } 
         const AppRuntimePathList = (await this.invService.list( {pageSize: 2000, query: `type eq app_runtimeContext`})).data;
         const AppRuntimePath: IAppRuntimeContext & {widgetContextPaths?: string[]} = AppRuntimePathList.find(path => path.appId === app.id);
         
