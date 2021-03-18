@@ -34,7 +34,7 @@ Pick one of the pre-built images available in the [Releases Area](https://github
    ```
    npm install ngx-bootstrap@5.5.0
    ```   
-3. Grab the Runtime Widget Loader **[Latest Release Binary](https://github.com/SoftwareAG/cumulocity-runtime-widget-loader/releases/download/v1.3.2/cumulocity-runtime-widget-loader-1006.6.24-1.0.2.tgz)**
+3. Grab the Runtime Widget Loader **[Latest Release Binary](https://github.com/SoftwareAG/cumulocity-runtime-widget-loader/releases/download/v.1.3.2/cumulocity-runtime-widget-loader-1006.6.24-1.0.2.tgz)**
 4. Install the Runtime Widget Loader:
    ```
    npm install <binary file path>/cumulocity-runtime-widget-loader-1006.6.24-1.0.2.tgz
