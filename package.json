@@ -55,7 +55,7 @@
     "@c8y/ngx-components": "1006.6.24",
     "core-js": "^3.4.0",
     "jszip": "^3.4.0",
-    "ng-packagr": "^9.1.1",
+    "ng-packagr": "^10.1.1",
     "ngx-bootstrap": "5.5.0",
     "patch-package": "^6.2.2",
     "rxjs": "~6.4.0",
