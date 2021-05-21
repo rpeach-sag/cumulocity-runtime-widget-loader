@@ -38,6 +38,10 @@ export class RuntimeWidgetInstallerModalComponent {
                 this.alertService.danger("No widget file selected");
                 return;
             }
+            if(widgetFile.name && widgetFile.name.indexOf(' ') >= 0) {
+                this.alertService.danger("Widget File name cannot contain SPACE");
+                return;
+            }
 
             this.busy = true;
 
@@ -60,7 +64,7 @@ export class RuntimeWidgetInstallerModalComponent {
             this.alertService.success("Widget Added! Refreshing...");
 
             // Give cumulocity a chance to load the file
-            await new Promise((resolve => setTimeout(() => resolve(), 3000)));
+            await new Promise<void>((resolve => setTimeout(() => resolve(), 5000)));
 
             // TODO: Technically we could just load the widget here... but current we don't support loading multiple times (See todo in loader code)
             location.reload();

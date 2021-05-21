@@ -27,7 +27,7 @@ import {
     DynamicComponentDefinition,
     HOOK_COMPONENTS,
     DynamicComponentComponent,
-    DynamicComponentService, AlertService, AppStateService
+    DynamicComponentService, AlertService, AppStateService, Alert
 } from "@c8y/ngx-components";
 import {BehaviorSubject, of} from "rxjs";
 import {filter, first, switchMap} from "rxjs/operators";
@@ -57,7 +57,8 @@ export class RuntimeWidgetLoaderService {
 
     monkeyPatch() {
         const runtimeWidgetLoaderService = this;
-        DynamicComponentComponent.prototype.loadComponent = function (dynamicComponent) {
+        // Workaround to access private method of c8y
+        (DynamicComponentComponent.prototype as any).loadComponent = function (dynamicComponent) {
             try {
                 this.error = undefined;
                 if ((dynamicComponent as any).isRuntimeLoaded) {
@@ -76,6 +77,7 @@ export class RuntimeWidgetLoaderService {
                 this.error = ex;
             }
         };
+        
         DynamicComponentComponent.prototype.ngOnChanges = function () {
             this.dynamicComponentService
                 .getById$(this.componentId)
@@ -98,7 +100,11 @@ export class RuntimeWidgetLoaderService {
     async loadRuntimeWidgets() {
         // Wait for login
         const user = await this.appStateService.currentUser.pipe(filter(user => user != null), first()).toPromise();
-
+        const alert: Alert = {
+            text: 'Please wait! Loading...',
+            type: 'info'
+        };
+        this.alertService.add(alert);
         // Find the current app so that we can pull a list of installed widgets from it
         const appList = (await (await this.fetchClient.fetch(`/application/applicationsByUser/${encodeURIComponent(user.userName)}?pageSize=2000`)).json()).applications;
         
@@ -117,9 +123,8 @@ export class RuntimeWidgetLoaderService {
             ...(app && app.widgetContextPaths) || [],
             ...(AppRuntimePath && AppRuntimePath.widgetContextPaths) || []
         ]));
-       
         const jsModules = [];
-
+        const cleanupWidgetContextPath = [];
         for (const contextPath of contextPaths) {
             // Import every widget's importManifest.js
             // The importManifest is a mapping from exported module name to webpack chunk file
@@ -127,7 +132,11 @@ export class RuntimeWidgetLoaderService {
                 try {
                     await corsImport(`/apps/${contextPath}/importManifest.js?${Date.now()}`);
                 } catch(e) {
-                    console.error(`Unable to find widget manifest: /apps/${contextPath}/importManifest.js\n`, e);
+                    if (appList.some(app => app.contextPath === contextPath)) {
+                        console.error(`Unable to find widget manifest: /apps/${contextPath}/importManifest.js\n`, e);
+                    } else {
+                        cleanupWidgetContextPath.push(contextPath);
+                    }
                     continue;
                 }
     
@@ -139,6 +148,7 @@ export class RuntimeWidgetLoaderService {
                 } catch (e) {
                     console.error(`Module: ${contextPath}, did not contain a custom widget\n`, e);
                     this.alertService.danger('Failed to load a runtime custom widget, it may have been compiled for a different Cumulocity version.', e.message);
+                    continue;
                 }
             }
         }
@@ -159,6 +169,7 @@ export class RuntimeWidgetLoaderService {
                     } catch(e) {
                         console.error(`Failed to compile widgets in module:`, jsModule, '\n', e);
                         this.alertService.danger('Failed to load runtime custom widget, it may have been compiled for a different Cumulocity version.', e.message);
+                        continue;
                     }
                 }
             }
@@ -189,7 +200,29 @@ export class RuntimeWidgetLoaderService {
             }
         }
 
+        this.alertService.remove(alert);
         this.isLoaded$.next(true);
+
+        // Auto Clean deleted widget from runtime context
+        let isContextPathChanged = false;
+        cleanupWidgetContextPath.forEach(contextPath => {
+            if(AppRuntimePath && AppRuntimePath.widgetContextPaths) {
+                const contextPathIndex = AppRuntimePath.widgetContextPaths.indexOf(contextPath);
+                if(contextPathIndex >= 0){
+                    AppRuntimePath.widgetContextPaths.splice(contextPathIndex, 1);
+                    isContextPathChanged = true;
+                }
+            }
+        });
+        if(isContextPathChanged){
+            let widgetContextPaths = [];
+            widgetContextPaths = [...AppRuntimePath.widgetContextPaths];
+            await this.invService.update({
+                id: AppRuntimePath.id,
+                widgetContextPaths
+            })
+        }
+        
     }
 
     loadWidget(ngModule: NgModuleRef<unknown>, dynamicComponentService: DynamicComponentService, widget: DynamicComponentDefinition) {
@@ -207,6 +240,31 @@ export class RuntimeWidgetLoaderService {
             console.error(`Failed to load runtime widget:`, widget, '\n', e);
             this.alertService.danger('Failed to load runtime custom widget, it may have been compiled for a different Cumulocity version.', e.message);
         }
+    }
+
+    /**
+     * Remove a widget from application. Widget will not be deleted from Cumulocity but removed from given Application
+     * Widget can be uninstall paremenently from Administration App
+     * @param widgetFile
+     * @param onUpdate
+     */    
+     async removeWidgetFromApp(appId:any, contextPath: string) {
+        const AppRuntimePaths = (await this.invService.list( {pageSize: 2000, query: `( type eq app_runtimeContext and appId eq '${appId}' `})).data;
+        if(AppRuntimePaths && AppRuntimePaths.length > 0) {
+            const appRuntimePath = AppRuntimePaths[0];
+            if(appRuntimePath && appRuntimePath.widgetContextPaths) {
+                const contextPathIndex = appRuntimePath.widgetContextPaths.indexOf(contextPath);
+                if(contextPathIndex >= 0){
+                    let widgetContextPaths = [];
+                    appRuntimePath.widgetContextPaths.splice(contextPathIndex, 1);
+                    widgetContextPaths = [...appRuntimePath.widgetContextPaths];
+                    await this.invService.update({
+                        id: appRuntimePath.id,
+                        widgetContextPaths
+                    })
+                }
+            }
+        }    
     }
 }
 export interface IAppRuntimeContext {
