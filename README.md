@@ -1,13 +1,21 @@
 # Cumulocity IoT Runtime Widget Loader
 Load [packaged](https://github.com/SoftwareAG/cumulocity-runtime-widget) Cumulocity IoT custom widgets at runtime, rather than by recompiling your whole application or you can create IoT custom widget with runtime widget loading support by following [Demo Widget](https://github.com/SoftwareAG/cumulocity-demo-widget).
 
+### Please choose Runtime Widget Loader release based on cumuloicty version:
+
+| CUMULOCITY | WIDGET LOADER |
+|------------|---------------|
+| 1009.x.x   | 1.3.3         |
+| 1007.x.x   | 1.3.2         |
+| 1006.x.x   | 1.3.2         |
+
 ## Widget Installation
 **Requires:** Application upload permission (usually admin rights)
 
 ![widget installation](https://user-images.githubusercontent.com/38696279/83655992-e9997280-a5b6-11ea-82e4-8411fdd0ebc7.png)
 
 1. While on a dashboard screen, select the `More...` -> `Install Widget` option in the action bar
-2. Upload a runtime widget zip file (Created using the [Runtime Widget Template](https://github.com/SoftwareAG/cumulocity-runtime-widget))
+2. Upload a runtime widget zip file (Created using the [Runtime Widget Template](https://github.com/SoftwareAG/cumulocity-runtime-widget) or by following [Demo Widget](https://github.com/SoftwareAG/cumulocity-demo-widget))
 3. Start using your widget
 
 ## Builds
@@ -22,7 +30,7 @@ Pick one of the pre-built images available in the [Releases Area](https://github
 ## Build Instructions
 1. (Optional) Create a new Cumulocity IoT web app and initialise it:
    ```
-   c8ycli new cockpit cockpit -a @c8y/apps@1006.6.24
+   c8ycli new cockpit cockpit -a @c8y/apps@1009.0.4
    cd cockpit
    npm install
    ```
@@ -30,14 +38,11 @@ Pick one of the pre-built images available in the [Releases Area](https://github
    ```
    npm install jszip webpack-external-import
    ```
-   For the 1006.6.0 version of Cumulocity IoT you also need to install a specific version of ngx-bootstrap:
-   ```
-   npm install ngx-bootstrap@5.5.0
-   ```   
-3. Grab the Runtime Widget Loader **[Latest Release Binary](https://github.com/SoftwareAG/cumulocity-runtime-widget-loader/releases/download/v.1.3.2/cumulocity-runtime-widget-loader-1006.6.24-1.0.2.tgz)**
+   
+3. Grab the Runtime Widget Loader **[Latest Release Binary](https://github.com/SoftwareAG/cumulocity-runtime-widget-loader/releases/download/v.1.3.3/cumulocity-runtime-widget-loader-1009.0.4-1.0.5.tgz)**
 4. Install the Runtime Widget Loader:
    ```
-   npm install <binary file path>/cumulocity-runtime-widget-loader-1006.6.24-1.0.2.tgz
+   npm install <binary file path>/cumulocity-runtime-widget-loader-1009.0.4-1.0.5.tgz
    ```
 5. Edit package.json start and build configurations to include an extraWebpackConfig option:
    ```
