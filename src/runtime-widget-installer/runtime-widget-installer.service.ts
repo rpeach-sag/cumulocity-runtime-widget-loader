@@ -97,7 +97,7 @@ export class RuntimeWidgetInstallerService {
         } 
 
         // step 2 -->
-        this.widgetInstallaitonProcess(appList, app, widgetFile, onUpdate);
+        await this.widgetInstallaitonProcess(appList, app, widgetFile, onUpdate);
         
     }
 
@@ -159,13 +159,13 @@ export class RuntimeWidgetInstallerService {
         }
 
         if(AppRuntimePath) {
-            this.invService.update({
+            await this.invService.update({
                 id: AppRuntimePath.id,
                 widgetContextPaths,
                 c8y_Global: {}
             })
         } else  {
-            this.invService.create({
+           await this.invService.create({
                 type: 'app_runtimeContext',
                 appId: app.id,
                 widgetContextPaths,
