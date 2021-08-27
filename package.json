@@ -1,7 +1,7 @@
 {
   "$schema": "./node_modules/ng-packagr/package.schema.json",
   "name": "cumulocity-runtime-widget-loader",
-  "version": "1009.0.4-1.0.5",
+  "version": "1010.0.8-1.0.0",
   "description": "Loads packaged widgets into Cumulocity IoT at runtime.",
   "repository": "github:SoftwareAG/cumulocity-runtime-widget-loader",
   "main": "src/public_api.ts",
@@ -15,7 +15,7 @@
     }
   },
   "scripts": {
-    "build": "ng-packagr -p package.json",
+    "build": "ng-packagr -p package.json && cd ./dist && npm pack",
     "deploy": "npm publish ./dist --tag latest",
     "postinstall": "patch-package"
   },
@@ -30,9 +30,9 @@
     "@angular/common": "^8.2.13",
     "@angular/core": "^8.2.13",
     "@angular/router": "^8.2.13",
-    "@c8y/ngx-components": "^1009.0.4",
+    "@c8y/ngx-components": "^1010.0.8",
     "jszip": "^3.4.0",
-    "ngx-bootstrap": "^5.5.0",
+    "ngx-bootstrap": "^5.6.1",
     "rxj": "^6.4.0",
     "webpack-external-import": "^2.2.4",
     "typescript": "^3.5.3"
@@ -51,17 +51,18 @@
     "@angular/platform-browser-dynamic": "8.2.13",
     "@angular/router": "8.2.13",
     "@angular/upgrade": "8.2.13",
-    "@c8y/cli": "1009.0.4",
-    "@c8y/ngx-components": "1009.0.4",
+    "@c8y/cli": "1010.0.8",
+    "@c8y/ngx-components": "1010.0.8",
     "core-js": "^3.4.0",
     "jszip": "^3.4.0",
     "ng-packagr": "^9.1.1",
-    "ngx-bootstrap": "5.5.0",
+    "ngx-bootstrap": "5.6.1",
     "patch-package": "^6.2.2",
     "rxjs": "~6.4.0",
     "typescript": "3.5.3",
     "url-search-params-polyfill": "6.0.0",
     "webpack-external-import": "^2.2.4",
-    "zone.js": "~0.9.1"
+    "zone.js": "~0.9.1",
+    "delay": "^4.3.0"
   }
 }

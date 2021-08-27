@@ -34,6 +34,7 @@ import {filter, first, switchMap} from "rxjs/operators";
 import corsImport from "webpack-external-import/corsImport";
 import { IApplication, FetchClient, InventoryService } from "@c8y/client";
 import {contextPathFromURL} from "../runtime-widget-installer/runtime-widget-installer.service";
+import { UpdateableAlert } from './UpdateableAlert';
 
 interface WidgetComponentFactoriesAndInjector {
     componentFactory: ComponentFactory<any>,
@@ -100,11 +101,8 @@ export class RuntimeWidgetLoaderService {
     async loadRuntimeWidgets() {
         // Wait for login
         const user = await this.appStateService.currentUser.pipe(filter(user => user != null), first()).toPromise();
-        const alert: Alert = {
-            text: 'Please wait! Loading...',
-            type: 'info'
-        };
-        this.alertService.add(alert);
+        const loadingAlert = new UpdateableAlert(this.alertService);
+        loadingAlert.update('Please wait! Loading...');
         // Find the current app so that we can pull a list of installed widgets from it
         const appList = (await (await this.fetchClient.fetch(`/application/applicationsByUser/${encodeURIComponent(user.userName)}?pageSize=2000`)).json()).applications;
         
@@ -125,10 +123,13 @@ export class RuntimeWidgetLoaderService {
         ]));
         const jsModules = [];
         const cleanupWidgetContextPath = [];
+        let widgetCounter = 0;
         for (const contextPath of contextPaths) {
             // Import every widget's importManifest.js
             // The importManifest is a mapping from exported module name to webpack chunk file
             if(contextPath && contextPath.length > 0) {
+                widgetCounter ++
+                loadingAlert.update(`Please wait! \nLoading widgets ${widgetCounter} of ${contextPaths.length} ...`);
                 try {
                     await corsImport(`/apps/${contextPath}/importManifest.js?${Date.now()}`);
                 } catch(e) {
@@ -153,6 +154,7 @@ export class RuntimeWidgetLoaderService {
             }
         }
 
+        loadingAlert.update('Please wait! Still Working...');
         // Create a list of all of the ngModules within the jsModules
         const ngModules: NgModuleRef<unknown>[] = [];
         for (const jsModule of jsModules) {
@@ -184,6 +186,7 @@ export class RuntimeWidgetLoaderService {
         //  All static widgets load in the same event loop cycle - promise will resolve in the next cycle
         await dynamicComponentService.state$.pipe(filter(state => state.size > 0), first()).toPromise()
 
+        loadingAlert.update('Please wait! Almost ready...');
         // Pull out all of the widgets from those angular modules and add them to cumulocity
         for (const ngModule of ngModules) {
             const widgets = ngModule.injector.get<(DynamicComponentDefinition | DynamicComponentDefinition[])[]>(HOOK_COMPONENTS) || [];
@@ -200,7 +203,7 @@ export class RuntimeWidgetLoaderService {
             }
         }
 
-        this.alertService.remove(alert);
+        loadingAlert.close();
         this.isLoaded$.next(true);
 
         // Auto Clean deleted widget from runtime context

@@ -46,7 +46,7 @@ export class RuntimeWidgetInstallerService {
      * @param widgetFile
      * @param onUpdate
      */
-    async installWidget(widgetFile: Blob, onUpdate: (msg: string, type?: any) => void = ()=>{}) {
+    async installWidget(widgetFile: Blob, onUpdate: (msg: string, type?: any) => void = ()=>{}, widgetInfo?: any) {
         // Check if we're debugging or on localhost - updating the app's cumulocity.json won't work when debugging on localhost so don't do anything
         const currentHost = window.location.host.split(':')[0];
         if (isDevMode() || currentHost === 'localhost' || currentHost === '127.0.0.1') {
@@ -66,7 +66,7 @@ export class RuntimeWidgetInstallerService {
         } 
         
         // step 2 -->
-        this.widgetInstallaitonProcess(appList, app, widgetFile, onUpdate);
+        await this.widgetInstallaitonProcess(appList, app, widgetFile, onUpdate, widgetInfo);
     }
 
     /**
@@ -76,7 +76,7 @@ export class RuntimeWidgetInstallerService {
      * @param widgetFile
      * @param onUpdate
      */
-     async installWidgetWithContext(widgetFile: Blob, contextPath: string, onUpdate: (msg: string, type?: any) => void = ()=>{}) {
+     async installWidgetWithContext(widgetFile: Blob, contextPath: string, onUpdate: (msg: string, type?: any) => void = ()=>{}, widgetInfo?: any) {
         
         // Check if we're debugging or on localhost - updating the app's cumulocity.json won't work when debugging on localhost so don't do anything
         const currentHost = window.location.host.split(':')[0];
@@ -97,11 +97,11 @@ export class RuntimeWidgetInstallerService {
         } 
 
         // step 2 -->
-        await this.widgetInstallaitonProcess(appList, app, widgetFile, onUpdate);
+        await this.widgetInstallaitonProcess(appList, app, widgetFile, onUpdate, widgetInfo);
         
     }
 
-    private async widgetInstallaitonProcess(appList: any, app: any, widgetFile: Blob, onUpdate: (msg: string, type?: any) => void = ()=>{}) {
+    private async widgetInstallaitonProcess(appList: any, app: any, widgetFile: Blob, onUpdate: (msg: string, type?: any) => void = ()=>{}, widgetInfo?: any) {
         // Step2: Deploy widget as an application to the tenant (if it doesn't already exist)
 
         // Get the widget's c8yJson so that we can read the context-path (to check if it is already deployed)
@@ -119,9 +119,34 @@ export class RuntimeWidgetInstallerService {
         }
 
         // Deploy the widget
+        if(widgetInfo) {
+            let manifest = widgetC8yJson.manifest;
+            if(manifest){
+                manifest.version = (!manifest.version ? widgetInfo.version : manifest.version);
+                manifest.author = (!manifest.author ? widgetInfo.author : manifest.author);
+                manifest.license = (!manifest.license ? widgetInfo.license : manifest.license);
+                manifest.requiredPlatformVersion = (!manifest.requiredPlatformVersion ? widgetInfo.requiredPlatformVersion : manifest.requiredPlatformVersion);
+            }
+        }
+        
         if (appList.some(app => app.contextPath === widgetC8yJson.contextPath)) {
-            onUpdate("Widget already deployed! Adding to Application...\n You can update a widget via the Apps Administration screen.");
+            onUpdate("Widget already deployed! Updating widget...");
+            const widgetApp = appList.find(app => app.contextPath === widgetC8yJson.contextPath);
+
+            // Upload the binary
+            const appBinary = (await this.appService.binary(widgetApp).upload(widgetFile)).data;
+
+            // Update the app
+             await this.appService.update({
+                ...widgetC8yJson,
+                id: widgetApp.id,
+                activeVersionId: appBinary.id.toString()
+            });
+            onUpdate("Widget updated! Adding to application...");
+           
+         //   onUpdate("Widget already deployed! Adding to Application...\n You can update a widget via the Apps Administration screen.");
         } else {
+            
             // Create the widget's app
             const widgetApp = (await this.appService.create({
                 ...widgetC8yJson,
